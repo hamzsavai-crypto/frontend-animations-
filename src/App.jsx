@@ -1,5 +1,5 @@
-import PhysicsLabPage from './components/physicslab/PhysicsLabPage';
+import LabRouter from './components/physicslab/Router';
 
 export default function App() {
-  return <PhysicsLabPage />;
+  return <LabRouter />;
 }

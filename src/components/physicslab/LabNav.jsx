@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import LogoMark from './LogoMark';
 
 const LINKS = [
-  { id: 'simulations', label: 'Simulations' },
-  { id: 'concepts', label: 'Concepts' },
-  { id: 'experiments', label: 'Experiments' },
-  { id: 'about', label: 'About' }
+  { id: 'simulations', label: 'Simulations', to: '/simulations' },
+  { id: 'concepts', label: 'Concepts', to: '/concepts' },
+  { id: 'experiments', label: 'Experiments', to: '/experiments' },
+  { id: 'about', label: 'About', to: '/about' }
 ];
 
 export default function LabNav() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState('');
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -20,12 +23,12 @@ export default function LabNav() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // which section is currently in the middle band of the viewport
+  // homepage scroll spy only on /
   useEffect(() => {
+    if (location.pathname !== '/') return undefined;
     if (typeof IntersectionObserver === 'undefined') return undefined;
     const sections = LINKS.map(l => document.getElementById(l.id)).filter(Boolean);
     if (!sections.length) return undefined;
-
     const io = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
@@ -36,30 +39,63 @@ export default function LabNav() {
     );
     sections.forEach(s => io.observe(s));
     return () => io.disconnect();
-  }, []);
+  }, [location.pathname]);
 
   const close = () => setOpen(false);
+
+  const handleLogoClick = (e) => {
+    close();
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // also update hash
+      history.pushState(null, '', '/');
+    }
+  };
+
+  const handleHomeAnchor = (id) => (e) => {
+    close();
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // if not on home, navigate to /#id then scroll after
+      e.preventDefault();
+      navigate(`/#${id}`);
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
+  };
+
+  const isActive = (to) => {
+    if (to === '/') return location.pathname === '/';
+    return location.pathname.startsWith(to);
+  };
 
   return (
     <header className={`lab-nav ${scrolled ? 'is-scrolled' : ''}`}>
       <div className="lab-wrap lab-nav-inner">
-        <a className="lab-logo" href="#top" aria-label="Physics Lab — home" onClick={close}>
+        <Link className="lab-logo" to="/" aria-label="Physics Lab — home" onClick={handleLogoClick}>
           <LogoMark size={26} />
           <span className="lab-logo-word">
             Physics <em>Lab</em>
           </span>
-        </a>
+        </Link>
 
         <nav aria-label="Primary">
           <ul className="lab-nav-links">
             {LINKS.map(l => (
               <li key={l.id}>
-                <a
-                  href={`#${l.id}`}
-                  className={`lab-nav-link ${active === l.id ? 'is-active' : ''}`}
+                <Link
+                  to={l.to}
+                  className={`lab-nav-link ${isActive(l.to) || active === l.id ? 'is-active active' : ''}`}
+                  onClick={location.pathname === '/' ? handleHomeAnchor(l.id) : close}
                 >
                   {l.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -79,12 +115,15 @@ export default function LabNav() {
 
       <div className={`lab-nav-mobile ${open ? 'is-open' : ''}`} id="lab-mobile-menu">
         <ul>
+          <li>
+            <Link to="/" onClick={close}>Home <span aria-hidden="true">→</span></Link>
+          </li>
           {LINKS.map(l => (
             <li key={l.id}>
-              <a href={`#${l.id}`} onClick={close}>
+              <Link to={l.to} onClick={close}>
                 {l.label}
                 <span aria-hidden="true">→</span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
