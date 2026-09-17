@@ -11,7 +11,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    hmr: true
+    hmr: true,
+    // allow the sandboxed live-preview host to reach the dev server
+    allowedHosts: true
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
